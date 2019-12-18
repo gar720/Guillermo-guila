@@ -1,0 +1,47 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use ieee.NUMERIC_STD.ALL;
+
+entity unidad_control is
+port(
+	boton_abrir_puerta :in STD_LOGIC;
+	boton_cerrar_puerta :in STD_LOGIC;
+	enableR1 :out STD_LOGIC;
+	enableR2 :out STD_LOGIC;
+	SUBIENDO :in STD_LOGIC;
+	Bajando : in STD_LOGIC;
+	estado_puerta : in STD_LOGIC;	-- entrada de la puerta
+	sensor_presencia_puerta : in STD_LOGIC;
+	sel1 : out STD_LOGIC;					-- para hacer la primera comparación o la de después del registro
+	CERRAR: in STD_LOGIC;
+	ACTIVO : in STD_LOGIC;
+	ABRIR: in STD_LOGIC;		-- Indica cuando la unidad_procesamiento esta operando.
+	clk : in std_logic;	-- Señal de reloj.
+	op :out std_LOGIC;
+	nop : out std_LOGIC
+	);
+end unidad_control;
+
+architecture Behavioral of unidad_control is
+begin 
+process (ABRIR,ACTIVO,CERRAR,sensor_presencia_puerta,estado_puerta,boton_abrir_puerta,boton_cerrar_puerta,clk)
+variable en_op: std_logic;
+variable en_nop: std_logic;
+begin
+
+if clk'event and clk='1' then
+	enableR1 <= activo and estado_puerta ;
+
+	sel1 <= SUBIENDO OR BAJANDO;
+	enableR2 <= ((CERRAR) and (not(estado_puerta)) and (not (sensor_presencia_puerta)) and (not (boton_abrir_puerta))) or ( (ABRIR ) and ( estado_puerta)  and (not (boton_cerrar_puerta))) or (estado_puerta and (not activo)and boton_abrir_puerta) or ((not activo) and boton_cerrar_puerta and (not estado_puerta) and (not sensor_presencia_puerta));	
+	en_op := (((CERRAR) and (not(estado_puerta)) and (not (sensor_presencia_puerta)) and (not (boton_abrir_puerta))) or ( (ABRIR ) and ( estado_puerta)  and (not (boton_cerrar_puerta))) or (estado_puerta and (not activo)and boton_abrir_puerta) or ((not activo) and boton_cerrar_puerta and (not estado_puerta) and (not sensor_presencia_puerta))) or ((not activo) and boton_abrir_puerta and (not estado_puerta));
+	en_nop := not en_op;
+	OP <= en_op;
+	nop<= en_nop;
+end if;
+
+
+	
+end process;
+end behavioral;
