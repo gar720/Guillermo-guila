@@ -1,0 +1,193 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use ieee.NUMERIC_STD.ALL;
+
+entity ASCENSOR is
+port(
+	BOTONES : in STD_LOGIC_VECTOR (3 downto 0);			
+	PLANTA_ASCENSOR: in STD_LOGIC_VECTOR (3 downto 0);
+	ESTADO_ASCENSOR: out STD_LOGIC_VECTOR (3 downto 0);
+	boton_abrir :in STD_LOGIC;
+	boton_cerrar :in STD_LOGIC;
+	
+	D4 : out STD_LOGIC_VECTOR (6 downto 0);	-- Undidades de millar.
+	D3 : out STD_LOGIC_VECTOR (6 downto 0);	-- Centenas.
+	D2 : out STD_LOGIC_VECTOR (6 downto 0);	-- Decenas.
+	D1 : out STD_LOGIC_VECTOR (6 downto 0);	-- Undidades.
+	
+	sensor_presencia : in STD_LOGIC;
+	SENAL_clK : in std_logic	-- Señal de reloj.
+	);
+end ASCENSOR;
+architecture RTL of ASCENSOR is
+
+component unidad_control	-- añadimos el componente unidad de control al sistema.
+	port (
+	boton_abrir_puerta :in STD_LOGIC;
+	boton_cerrar_puerta :in STD_LOGIC;
+	enableR1 :out STD_LOGIC;
+	enableR2 :out STD_LOGIC;
+	SUBIENDO: IN STD_LOGIC;
+	BAJANDO :IN STD_LOGIC;
+	estado_puerta : in STD_LOGIC;	-- salida para unidad_control
+	sensor_presencia_puerta : in STD_LOGIC;
+	sel1 : out STD_LOGIC;					-- para hacer la primera comparación o la de después del registro
+	CERRAR: in STD_LOGIC;
+	ACTIVO : in STD_LOGIC;
+	ABRIR: in STD_LOGIC;		-- Indica cuando la unidad_procesamiento esta operando.
+	clk : in std_logic	-- Señal de reloj.
+	);
+end component;
+
+component unidad_procesamiento is 	-- añadimos el componente unidad de procesamiento al sistema.
+port(
+   BOTON : in STD_LOGIC_VECTOR (3 downto 0);			
+	PLANTA_ACTUAL: in STD_LOGIC_VECTOR (3 downto 0);
+	ESTADO_PLANTA_ACTUAL: out STD_LOGIC_VECTOR (3 downto 0);
+	enableR1 :in STD_LOGIC;
+	enableR2 :in STD_LOGIC;
+	estado_puerta : out STD_LOGIC;	-- salida para unidad_control
+	sel1 : in STD_LOGIC;					-- para hacer la primera comparación o la de después del registro
+	CERRAR: out STD_LOGIC;
+	SUBIENDO : out STD_LOGIC;			-- INFORMATIVA
+	BAJANDO : out STD_LOGIC;			-- INFORMATIVA
+	ACTIVO : out STD_LOGIC;
+	ABRIR: out STD_LOGIC;		-- Indica cuando la unidad_procesamiento esta operando.
+	clk : in std_logic	-- Señal de reloj.
+	);
+end component;
+
+component digital_clock_top is
+port (
+	clk50mhz: 	in STD_LOGIC;
+	clk:		out STD_LOGIC
+);
+end component;
+
+component display is -- añadimos el componente display al sistema.
+port(
+	a, b, c, d, e, f, g : out std_logic;
+   x3, x2, x1, x0 : in std_logic
+);
+end component;
+
+-- ponemos la señales internas del sistema  
+signal A_EXT : STD_Logic;	
+signal B_EXT : STD_Logic;
+signal C_EXT : STD_Logic;
+signal D_EXT : std_LOGIC;
+signal E_EXT : STD_Logic;	
+signal F_EXT : STD_Logic;
+signal G_EXT : STD_Logic;
+signal I_EXT : STD_LOGIC;
+signal J_EXT :STD_LOGIC;
+signal K_EXT :STD_LOGIC_VECTOR(3 downto 0);
+SIGNAL CLOCK_EXT : STD_LOGIC;
+begin 
+
+-- Conectamos las unidades entre si 
+reloj : digital_clock_top port map(
+clk50mhz => 	SENAL_clK,
+	clk =>	CLOCK_EXT	
+
+);
+
+unidad_control1: unidad_control port map(
+	enableR1 =>  A_EXT,	
+	enableR2 =>  B_EXT, 
+	estado_puerta => D_EXT,		
+	sel1 => E_EXT,
+	CERRAR => F_EXT,
+	ACTIVO => G_EXT,
+	ABRIR => I_EXT,
+	SUBIENDO => C_EXT,
+	BAJANDO => J_EXT,
+ 	
+	boton_abrir_puerta => boton_abrir,
+	boton_cerrar_puerta => boton_cerrar,
+	sensor_presencia_puerta => sensor_presencia,
+	clk => CLOCK_EXT			-- Indicamos que clock de la unidad de control es la señal de reloj que usaremos en el multiplicador.
+);
+
+unidad_procesamiento1: unidad_procesamiento port map(
+	enableR1 =>  A_EXT,	
+	enableR2 =>  B_EXT,  
+	estado_puerta => D_EXT,
+	sel1 => E_EXT,
+	CERRAR => F_EXT,
+	ACTIVO => G_EXT,
+	ABRIR => I_EXT,
+	SUBIENDO => C_EXT,
+	BAJANDO => J_EXT,
+	
+	BOTON => BOTONES,
+	PLANTA_ACTUAL => PLANTA_ASCENSOR,
+	ESTADO_PLANTA_ACTUAL => K_EXT,
+
+	
+	clk  => CLOCK_EXT			-- Señal de reloj
+	);
+	
+   segmentos_7: display port map(
+	-- Desde el bit 10 hasta el 13 se le añade al primer display para que represente las unidades.
+	x3 => '0',
+	x2 => '0',
+	x1 => '0',
+	x0 => K_EXT(0),
+	-- Salida de los display.
+	a =>  D1(6),
+	b =>  D1(5),
+	c =>  D1(4),
+	d =>  D1(3),
+	e =>  D1(2),
+	f =>  D1(1),
+	g =>  D1(0)
+	);
+	
+	-- Desde el bit 14 hasta el 17 se le añade al primer display para que represente las decenas.
+	segmentos_2: display port map(
+	x3 => '0',
+	x2 => '0',
+	x1 => '0',
+	x0 => K_EXT(1),
+	-- Salida de los display.
+	a =>  D2(6),
+	b =>  D2(5),
+	c =>  D2(4),
+	d =>  D2(3),
+	e =>  D2(2),
+	f =>  D2(1),
+	g =>  D2(0)	
+	);
+	-- Desde el bit 18 hasta el 21 se le añade al primer display para que represente las centenas.
+	segmentos_3: display port map(
+	x3 => '0',
+	x2 => '0',
+	x1 => '0',
+	x0 => K_EXT(2),
+	-- Salida de los display.
+	a => D3(6),
+	b => D3(5),
+	c => D3(4),
+	d => D3(3),
+	e => D3(2),
+	f => D3(1),
+	g => D3(0)
+	);	
+	
+	segmentos_4: display port map(
+	x3 => '0',
+	x2 => '0',
+	x1 => '0',
+	x0 => K_EXT(3),
+	-- Salida de los display.
+	a => D4(6),
+	b => D4(5),
+	c => D4(4),
+	d => D4(3),
+	e => D4(2),
+	f => D4(1),
+	g => D4(0)
+	);
+end RTL;
