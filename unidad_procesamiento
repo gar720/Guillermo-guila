@@ -1,0 +1,117 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use ieee.NUMERIC_STD.ALL;
+
+entity unidad_procesamiento is
+port(
+	BOTON : in STD_LOGIC_VECTOR (3 downto 0);			
+	PLANTA_ACTUAL: in STD_LOGIC_VECTOR (3 downto 0);
+	ESTADO_PLANTA_ACTUAL: out STD_LOGIC_VECTOR (3 downto 0);
+	enableR1 :in STD_LOGIC;
+	enableR2 :in STD_LOGIC;
+	estado_puerta : out STD_LOGIC;	-- salida para unidad_control
+	sel1 : in STD_LOGIC;					-- para hacer la primera comparación o la de después del registro
+	CERRAR: out STD_LOGIC;
+	SUBIENDO : out STD_LOGIC;			-- INFORMATIVA
+	BAJANDO : out STD_LOGIC;			-- INFORMATIVA
+	ACTIVO : out STD_LOGIC;
+	ABRIR: out STD_LOGIC;		-- Indica cuando la unidad_procesamiento esta operando.
+	clk : in std_logic	-- Señal de reloj.
+	);
+end unidad_procesamiento;
+architecture Behavioral of unidad_procesamiento is
+
+begin 
+process (BOTON,PLANTA_ACTUAL,enableR1,enableR2,sel1,clk)
+
+VARIABLE PLANTA_ACTUAL_VARIABLE : STD_LOGIC_VECTOR(3 downto 0);
+VARIABLE puerta_actual : STD_LOGIC;
+begin
+
+
+if clk'event and clk='1' then
+	if sel1 = '0' then
+		if BOTON = "0000" THEN 
+			ACTIVO <= '0';
+			CERRAR <= '0';
+			ABRIR <= '0';
+			SUBIENDO <= '0';
+			BAJANDO <= '0';
+			puerta_actual := '0';
+			plaNTA_ACTUAL_VARIABLE := PLANTA_ACTUAL;
+			ESTADO_PLANTA_ACTUAL <= PLANTA_ACTUAL;
+			if enableR2 = '1' then 
+				estado_puerta <= NOT PUERTA_actual;
+				PUERTA_actual := NOT pueRTA_actual;
+			end if;
+		elsif (BOTON = "0001" and plaNTA_ACTUAL_VARIABLE /= "0001") or (BOTON = "0010" and plaNTA_ACTUAL_VARIABLE /= "0010") or (BOTON = "0100" and plaNTA_ACTUAL_VARIABLE /= "0100") or(BOTON = "1000" and plaNTA_ACTUAL_VARIABLE /= "1000") THEN
+			CERRAR <= '1';
+			ACTIVO <= '1';
+			ESTado_puerta <= PUERTA_actual;
+			if enableR2 = '1' then
+				estado_puerta <= NOT PUERTA_actual;
+				PUERTA_actual := NOT pueRTA_actual;
+			end if;
+			if enableR1 = '1'then  			
+				if BOTON > PLANTA_ACTUAL_VARIABLE then
+					SUBIENDO <= '1';
+					-- estado_puerta <= NOT PUERTA_actual;
+					-- PUERTA_actual := NOT pueRTA_actual;
+					PLANTA_ACTUAL_VARIABLE (3) := PLANTA_ACTUAL_VARIABLE (2);
+					PLANTA_ACTUAL_VARIABLE (2) := PLANTA_ACTUAL_VARIABLE (1);
+					PLANTA_ACTUAL_VARIABLE (1) := PLANTA_ACTUAL_VARIABLE (0);
+					PLANTA_ACTUAL_VARIABLE (0) := '0';
+				elsIF  BOTON < PLANTA_ACTUAL_VARIABLE then
+					BAJANDO <= '1';
+					PLANTA_ACTUAL_VARIABLE (0) := PLANTA_ACTUAL_VARIABLE (1);
+					PLANTA_ACTUAL_VARIABLE (1) := PLANTA_ACTUAL_VARIABLE (2);
+					PLANTA_ACTUAL_VARIABLE (2) := PLANTA_ACTUAL_VARIABLE (3);
+					PLANTA_ACTUAL_VARIABLE (3) := '0';
+					
+				end if;
+				ESTADO_PLANTA_ACTUAL <= PLANTA_ACTUAL_VARIABLE;
+			end if;		
+		else
+			if enableR2 = '1' then
+				estado_puerta <= NOT pueRTA_actual;
+				puerta_actual := NOT puerta_actual;
+			end if;
+		end if;
+	else 
+		if (BOTON = "0001" and PLANTA_ACTUAL_VARIABLE /= "0001") or (BOTON = "0010" and PLANTA_ACTUAL_VARIABLE /= "0010") or (BOTON = "0100" and PLANTA_ACTUAL_VARIABLE /= "0100") or(BOTON = "1000" and PLANTA_ACTUAL_VARIABLE /= "1000") THEN
+			ABRIR <= '0';
+			CERRAR <= '0'; 
+			ACTIVO <= '1';
+			if enableR1 = '1'then
+				if BOTON > PLANTA_ACTUAL_VARIABLE then
+					PLANTA_ACTUAL_VARIABLE (3) := PLANTA_ACTUAL_VARIABLE (2);
+					PLANTA_ACTUAL_VARIABLE (2) := PLANTA_ACTUAL_VARIABLE (1);
+					PLANTA_ACTUAL_VARIABLE (1) := PLANTA_ACTUAL_VARIABLE (0);
+					PLANTA_ACTUAL_VARIABLE (0) := '0';
+				elsif BOTON < PLANTA_ACTUAL_VARIABLE THEN 
+					PLANTA_ACTUAL_VARIABLE (0) := PLANTA_ACTUAL_VARIABLE (1);
+					PLANTA_ACTUAL_VARIABLE (1) := PLANTA_ACTUAL_VARIABLE (2);
+					PLANTA_ACTUAL_VARIABLE (2) := PLANTA_ACTUAL_VARIABLE (3);
+					PLANTA_ACTUAL_VARIABLE (3) := '0';
+				end if;
+			end if;
+			ESTADO_PLANTA_ACTUAL <= PLANTA_ACTUAL_VARIABLE;
+		else
+			ABRIR <= '1';
+			CERRAR <= '0';
+			ACTIVO <= '0';
+			SUBIENDO <= '0';
+			BAJANDO <='0';
+			ESTADO_PLANTA_ACTUAL <= PLANTA_ACTUAL_VARIABLE;
+			if enableR2 = '1' then
+				estado_puerta <= NOT pueRTA_actual;
+				puerta_actual := NOT puerta_actual;
+			end if;
+		end if;
+	end if;
+end if;
+	
+
+end process;
+END Behavioral;
